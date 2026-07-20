@@ -1,0 +1,32 @@
+# Faithful replica of UniMatch V2's Pascal VOC recipe.
+# Paper: arXiv 2410.10777. Code: github.com/LiheYoung/UniMatch-V2.
+# Their numbers on Pascal 1/8: DINOv2-Small -> 85.5, DINOv2-Base -> 87.9.
+
+dataset: pascal
+nclass: 21
+data_root: /content/data/pascal
+
+# Model
+model: dino
+backbone: dinov2_vitb14
+pretrain: True
+scheme: unimatch_v2
+
+# Training (must be divisible by 14: 518 = 37*14)
+crop_size: 518
+epochs: 60
+batch_size: 4         # per-step; effective 16 with 4-way grad accum or 4 GPUs
+backbone_lr: 5.0e-6   # encoder LR (UniMatch V2)
+decoder_lr: 2.0e-4    # decoder LR (lr_multi = 40)
+layer_decay: 1.0      # disable layer-wise LR decay (not used by UniMatch V2)
+
+# UniMatch V2 specifics
+conf_thresh: 0.95
+no_cutmix: false      # CutMix applied independently to both strong views
+
+# Calibration / cwbass_v2-specific knobs (unused by unimatch_v2 scheme but kept
+# in the config for completeness).
+calib_frac: 0.0
+method: cwbass        # bypasses adaptive-threshold module entirely
+warmup_epochs: 0
+ema_decay: 0.999

@@ -1,0 +1,32 @@
+# arguments for dataset
+dataset: pascal
+nclass: 21
+crop_size: 321
+data_root: /content/data/pascal  # Colab default; override with --data-root
+
+# arguments for training
+epochs: 80
+batch_size: 16
+lr: 0.001
+lr_multi: 10.0
+criterion:
+  name: CELoss
+  kwargs:
+    ignore_index: 255
+
+# arguments for model
+backbone: resnet50
+pretrain: True
+multi_grid: False
+replace_stride_with_dilation: [False, True, True]
+dilations: [12, 24, 36]
+
+# class-adaptive thresholding
+method: class_adaptive
+warmup_epochs: 10
+ema_decay: 0.999
+lambda_coverage: 0.1
+delta: 0.05
+base_threshold: 0.6
+gamma: 1.0
+beta: 0.5

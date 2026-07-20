@@ -1,0 +1,36 @@
+# CW-BASS v2 on Pascal VOC with a DINOv2-Base backbone.
+# Recipe: original CW-BASS dynamic threshold + self-adaptive confidence floor
+# + held-out calibration. UniMatch-style dual perturbation kept on top.
+
+dataset: pascal
+nclass: 21
+data_root: /content/data/pascal
+
+# Model
+model: dino
+backbone: dinov2_vitb14
+pretrain: True
+scheme: cwbass_v2         # CW-BASS v2 native scheme + method=cwbass_v2
+method: cwbass_v2
+
+# Training (must be divisible by 14: 518 = 37*14)
+crop_size: 518
+epochs: 60
+batch_size: 4
+backbone_lr: 5.0e-6
+decoder_lr: 2.0e-4
+layer_decay: 1.0          # disable LLRD to match UniMatch V2's two-group setup
+
+# CW-BASS dynamic-threshold knobs
+base_threshold: 0.6
+beta: 0.5
+
+# CW-BASS v2 additions: held-out calibration + self-adaptive floor
+calib_frac: 0.05          # held-out fraction of the labeled set
+floor_momentum: 0.99      # EMA of mean confidence (drives the floor)
+floor_scale: 0.95         # floor = scale * EMA(mean_conf)
+ema_decay: 0.999
+
+# Misc
+gamma: 1.0
+warmup_epochs: 0          # ignored when method=cwbass_v2 (always dynamic)

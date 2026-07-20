@@ -1,0 +1,31 @@
+# CW-BASS-v2 codebase + DINOv2-Base recipe — ADE20K (150 classes).
+dataset: ade20k
+nclass: 150
+data_root: /content/data/ade20k
+
+# model
+model: dino
+backbone: dinov2_vitb14
+pretrain: True
+
+# training (crop must be divisible by 14: 518 = 37*14)
+# Family B (UniMatch-V2-faithful) optimizer setup.
+crop_size: 518
+epochs: 60
+batch_size: 4
+backbone_lr: 5.0e-6
+decoder_lr: 2.0e-4
+layer_decay: 1.0          # disable LLRD to match UniMatch V2's two-group setup
+
+# class-adaptive thresholding (Phase 3)
+method: class_adaptive
+warmup_epochs: 5
+ema_decay: 0.999
+lambda_coverage: 0.1
+lambda_cap: 10.0
+rarity_power: 1.0
+floor_momentum: 0.99
+floor_scale: 0.95
+base_threshold: 0.6
+gamma: 1.0
+beta: 0.5

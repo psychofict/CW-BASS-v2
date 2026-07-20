@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CW-BASS v2 — Saturation-Aware Pseudo-Label Selection</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛰️</text></svg>">
+<link rel="preconnect" href="https://huggingface.co">
+<link rel="canonical" href="https://psychofict.github.io/CW-BASS-v2/">
+<meta name="robots" content="index,follow">
+<meta name="author" content="Ebenezer Tarubinga">
+<meta name="theme-color" content="#1f4fd8">
+<meta name="description" content="CW-BASS v2: a saturation-aware, reliability-gated pseudo-label selection method for semi-supervised semantic segmentation under foundation-model (DINOv2) teachers.">
+<meta property="og:title" content="CW-BASS v2 — Saturation-Aware Pseudo-Label Selection">
+<meta property="og:description" content="A reliability gate picks the accuracy-optimal pseudo-label rule blind across six DINOv2 teachers — strict where the confident set is reliable, an adaptive floor where it is not.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://psychofict.github.io/CW-BASS-v2/og.png">
+<meta property="og:url" content="https://psychofict.github.io/CW-BASS-v2/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://psychofict.github.io/CW-BASS-v2/og.png">
+<script>
+  // Light default + explicit toggle (no prefers-color-scheme auto-dark).
+  (function () {
+    var t = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+<style>
+  :root{
+    --bg:#fbfaf7; --panel:#ffffff; --ink:#1b1a17; --muted:#6b6862; --line:#e7e3da;
+    --brand:#1f4fd8; --brand2:#0ea5e9; --accent:#e08a1e; --gold:#c8a24a; --shadow:0 1px 2px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.05);
+  }
+  :root[data-theme="dark"]{
+    --bg:#111318; --panel:#181b22; --ink:#e9e7e2; --muted:#9a978f; --line:#2a2e37;
+    --brand:#7aa2ff; --brand2:#5cc8ff; --accent:#f0ad4e; --gold:#d8b768; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--ink); font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased;}
+  a{color:var(--brand); text-decoration:none} a:hover{text-decoration:underline}
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px}
+  code,kbd,pre{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  header.top{position:sticky; top:0; z-index:10; backdrop-filter:saturate(1.2) blur(8px);
+    background:color-mix(in srgb,var(--bg) 84%, transparent); border-bottom:1px solid var(--line)}
+  .topbar{display:flex; align-items:center; justify-content:space-between; height:56px}
+  .topbar .name{font-weight:800; letter-spacing:.2px}
+  .topbar nav a{margin-left:16px; color:var(--muted); font-size:.92rem}
+  .toggle{cursor:pointer; border:1px solid var(--line); background:var(--panel); color:var(--ink);
+    border-radius:999px; padding:5px 12px; font-size:.85rem; margin-left:16px}
+  .hero{text-align:center; padding:54px 0 24px}
+  .hero h1{font-size:2.7rem; line-height:1.08; margin:.1em 0 .12em; font-weight:850;
+    background:linear-gradient(90deg,var(--brand2),var(--brand)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .hero .tag{font-size:1.16rem; color:var(--ink); max-width:760px; margin:.2em auto .1em; font-weight:600}
+  .hero .authors{color:var(--muted); margin:.5em 0 .2em}
+  .orcid{display:inline-block;vertical-align:-2px;margin-left:.32em;line-height:0}
+  .orcid:hover{opacity:.75}
+  .hero .venue{color:var(--muted); font-size:.92rem}
+  .btns{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:20px 0 4px}
+  .btn{display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line); background:var(--panel);
+    color:var(--ink); padding:9px 16px; border-radius:999px; font-weight:600; font-size:.94rem; box-shadow:var(--shadow)}
+  .btn.primary{background:linear-gradient(90deg,var(--brand2),var(--brand)); color:#fff; border-color:transparent}
+  .btn:hover{text-decoration:none; transform:translateY(-1px)} .btn{transition:transform .12s ease}
+  figure{margin:26px 0; text-align:center}
+  figure img{max-width:100%; height:auto; border:1px solid var(--line); border-radius:14px; background:var(--panel); box-shadow:var(--shadow)}
+  figcaption{color:var(--muted); font-size:.9rem; margin-top:10px}
+  section{padding:30px 0; border-top:1px solid var(--line)}
+  h2{font-size:1.5rem; margin:.2em 0 .5em}
+  h3{font-size:1.08rem; margin:1.2em 0 .3em}
+  p{color:var(--ink)}
+  .lead{font-size:1.06rem}
+  .callout{background:var(--panel); border:1px solid var(--line); border-left:4px solid var(--brand);
+    border-radius:12px; padding:14px 18px; margin:18px 0; box-shadow:var(--shadow)}
+  .callout b{color:var(--brand)}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:var(--shadow)}
+  .card .k{font-size:2rem; font-weight:820; color:var(--brand)}
+  .card .s{color:var(--muted); font-size:.9rem}
+  table{width:100%; border-collapse:collapse; margin:10px 0; font-size:.95rem}
+  th,td{padding:8px 10px; text-align:center; border-bottom:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  thead th{color:var(--muted); font-weight:700; font-size:.82rem; text-transform:uppercase; letter-spacing:.04em}
+  tbody tr:hover{background:color-mix(in srgb,var(--brand) 6%, transparent)}
+  .best{font-weight:800}
+  .ours td{background:color-mix(in srgb,var(--brand) 8%, transparent)}
+  .tabs{display:flex; gap:8px; margin:6px 0 4px; flex-wrap:wrap}
+  .tab{cursor:pointer; border:1px solid var(--line); background:var(--panel); color:var(--muted);
+    padding:7px 14px; border-radius:999px; font-weight:600; font-size:.9rem}
+  .tab[aria-selected="true"]{background:var(--brand); color:#fff; border-color:transparent}
+  .board{display:none} .board.on{display:block}
+  .note{color:var(--muted); font-size:.88rem; margin-top:6px}
+  .tblwrap{overflow-x:auto}
+  pre.bib{position:relative; background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:16px; overflow-x:auto; font-size:.85rem; box-shadow:var(--shadow)}
+  .copy{position:absolute; top:10px; right:10px; cursor:pointer; border:1px solid var(--line);
+    background:var(--bg); color:var(--ink); border-radius:8px; padding:4px 10px; font-size:.8rem}
+  footer{padding:34px 0 60px; color:var(--muted); font-size:.9rem; text-align:center}
+  @media (max-width:640px){ .hero h1{font-size:2.05rem} .grid3{grid-template-columns:1fr} .topbar nav{display:none} }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap topbar">
+  <div class="name">CW-BASS v2</div>
+  <nav>
+    <a href="#method">Method</a>
+    <a href="#results">Results</a>
+    <a href="#gate">The gate</a>
+    <a href="#models">Models</a>
+    <a href="#bibtex">BibTeX</a>
+    <span class="toggle" id="themeBtn" role="button" tabindex="0">◐ Theme</span>
+  </nav>
+</div></header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <h1>CW-BASS v2</h1>
+    <div class="tag">Saturation-Aware Pseudo-Label Selection for Semi-Supervised Segmentation under Foundation-Model Teachers</div>
+    <div class="authors">Ebenezer Tarubinga<a class="orcid" href="https://orcid.org/0009-0004-7340-1873" target="_blank" rel="me noopener" title="ORCID iD 0009-0004-7340-1873" aria-label="ORCID iD of Ebenezer Tarubinga"><svg viewBox="0 0 256 256" width="14" height="14" aria-hidden="true"><path d="M256 128c0 70.7-57.3 128-128 128S0 198.7 0 128 57.3 0 128 0s128 57.3 128 128z" fill="#A6CE39"/><g fill="#fff"><path d="M86.3 186.2H70.9V79.1h15.4v107.1z"/><path d="M108.9 79.1h41.6c39.6 0 57 28.3 57 53.6 0 27.5-21.5 53.6-56.8 53.6h-41.8V79.1zm15.4 93.3h24.5c34.9 0 42.9-26.5 42.9-39.7C191.7 111.2 178 93 148 93h-23.7v79.4z"/><path d="M88.7 56.8c0 5.5-4.5 10.1-10.1 10.1s-10.1-4.6-10.1-10.1c0-5.6 4.5-10.1 10.1-10.1s10.1 4.6 10.1 10.1z"/></g></svg></a></div>
+    <div class="venue">AI Research Department, Ebenworks Systems · <a href="https://arxiv.org/abs/2608.12773">arXiv:2608.12773</a> · extends <a href="https://arxiv.org/abs/2502.15152">CW-BASS (IJCNN 2025)</a></div>
+    <div class="btns">
+      <a class="btn primary" href="https://arxiv.org/abs/2608.12773">📄 Read the paper</a>
+      <a class="btn" href="https://huggingface.co/spaces/psychofict/cwbass-v2-segmentation">▶ Try the demo</a>
+      <a class="btn" href="https://github.com/psychofict/CW-BASS-v2">💻 Code</a>
+      <a class="btn" href="https://huggingface.co/psychofict/cwbass-v2-pascal">🧩 Models</a>
+    </div>
+    <div class="btns" style="gap:6px;margin-top:2px">
+      <a href="https://paperswithcode.co/api/v1/papers/2608.12773/leaderboard-badge-link?eval=26066"><img
+         src="https://paperswithcode.co/api/v1/papers/2608.12773/leaderboard-badge.svg?eval=26066&amp;live=1"
+         style="max-width:100%;height:auto" alt="Papers with Code ranking on Cityscapes"></a>
+      <a href="https://paperswithcode.co/api/v1/papers/2608.12773/leaderboard-badge-link?eval=26065"><img
+         src="https://paperswithcode.co/api/v1/papers/2608.12773/leaderboard-badge.svg?eval=26065&amp;live=1"
+         style="max-width:100%;height:auto" alt="Papers with Code ranking on PASCAL VOC 2012"></a>
+      <a href="https://paperswithcode.co/api/v1/papers/2608.12773/leaderboard-badge-link?eval=26067"><img
+         src="https://paperswithcode.co/api/v1/papers/2608.12773/leaderboard-badge.svg?eval=26067&amp;live=1"
+         style="max-width:100%;height:auto" alt="Papers with Code ranking on ADE20K"></a>
+    </div>
+  </div>
+
+  <figure>
+    <img src="teaser.png" alt="CW-BASS v2 — the confidence regime shifts under a DINOv2 teacher, and the reliability gate selects the right rule.">
+    <figcaption>Under a foundation-model teacher, confidence <b>saturates</b>. Whether to filter aggressively is no longer obvious — CW-BASS v2 <b>measures</b> it.</figcaption>
+  </figure>
+
+  <section id="tldr" style="border-top:none">
+    <h2>The one question</h2>
+    <p class="lead">Semi-supervised segmentation turns on one question: <b>which pseudo-labels to trust, and how much.</b>
+    A generation of selection rules — dynamic thresholds, per-class curricula, soft confidence weights — answered it
+    for the noisy, under-confident ResNet teachers of the day. Self-supervised foundation encoders (DINOv2) change the
+    regime: the teacher is now strong and its confidence <b>saturates</b>, so filtering that helped a weak teacher can
+    <em>hurt</em> a strong one.</p>
+    <div class="callout">
+      <b>CW-BASS v2</b> is a <b>saturation-aware</b> selection method. It measures the reliability of the teacher's
+      confident set, <b>π<sub>kept</sub> = Pr[correct | c ≥ τ]</b>, on a held-out slice, and uses <b>strict filtering
+      when π<sub>kept</sub> ≥ τ</b> (the confident set is at least as reliable as the confidence it demands), an
+      <b>adaptive floor</b> otherwise. The boundary is the operating threshold itself — <b>tuned to no mIoU</b> — yet
+      across <b>six DINOv2 teachers the gate picks the accuracy-optimal rule blind.</b>
+    </div>
+    <div class="grid3">
+      <div class="card"><div class="k">6/6</div><div class="s">DINOv2 teachers where the gate selects the accuracy-optimal rule, blind</div></div>
+      <div class="card"><div class="k">87.4</div><div class="s">Pascal VOC 1/8 mIoU (gate → strict; top DINOv2 tier)</div></div>
+      <div class="card"><div class="k">+1.5</div><div class="s">ADE20K 1/8 mIoU over the strict baseline (gate → floor)</div></div>
+    </div>
+  </section>
+
+  <section id="method">
+    <h2>Method</h2>
+    <p>A single DINOv2-Base backbone drives an image-strong and a feature-perturbation stream (UniMatch V2 style) into a
+    DPT-lite decoder. On top, CW-BASS v2 adds three components and one decision:</p>
+    <ul>
+      <li><b>Confidence-weighted, boundary-aware self-training</b> — the CW-BASS objective (Sobel boundary auxiliary).</li>
+      <li><b>Held-out calibration slice</b> — 5% of the labeled set, withheld from the supervised gradient, gives an
+        <em>unbiased</em> estimate of pseudo-label noise (in-batch estimates are optimistically biased).</li>
+      <li><b>Self-adaptive confidence floor</b> — with a bounded-retention property, so the dynamic threshold cannot
+        drift to its clamp and admit everything.</li>
+      <li><b>The reliability gate</b> — one forward pass on the held-out slice decides <b>strict vs. floor</b>.</li>
+    </ul>
+    <figure>
+      <img src="architecture.png" alt="CW-BASS v2 architecture: DINOv2-Base backbone, dual streams, DPT-lite decoder, calibration slice, adaptive floor, and the reliability gate.">
+      <figcaption>CW-BASS v2 architecture. The gate reads the held-out slice once and selects the pseudo-label rule; no inference-time parameters are added.</figcaption>
+    </figure>
+  </section>
+
+  <section id="results">
+    <h2>Results</h2>
+    <p>Accuracy tracks the <b>backbone</b>, and CW-BASS v2 sits in the top DINOv2 tier. On the saturated Pascal and
+    Cityscapes teachers the gate selects <b>strict</b> (reproducing the UniMatch V2 operating point); on the
+    confidently-unreliable ADE20K teacher it selects the <b>floor</b> and pulls ahead.</p>
+    <div class="tabs" role="tablist">
+      <span class="tab" role="tab" aria-selected="true" data-board="voc">Pascal VOC</span>
+      <span class="tab" role="tab" aria-selected="false" data-board="cs">Cityscapes</span>
+      <span class="tab" role="tab" aria-selected="false" data-board="ade">ADE20K</span>
+    </div>
+
+    <div class="board on" id="board-voc">
+      <div class="tblwrap"><table>
+        <thead><tr><th>Method</th><th>Backbone</th><th>1/16 (92)</th><th>1/8 (183)</th><th>1/4 (366)</th></tr></thead>
+        <tbody>
+          <tr><td>UniMatch V2</td><td>DINOv2-B</td><td class="best">86.3</td><td class="best">87.9</td><td class="best">88.9</td></tr>
+          <tr class="ours"><td>CW-BASS v2 (gate → strict)</td><td>DINOv2-B</td><td>84.47</td><td>87.40</td><td>88.59</td></tr>
+          <tr><td>SemiVL</td><td>CLIP ViT-B</td><td>84.0</td><td>85.6</td><td>86.0</td></tr>
+          <tr><td>UniMatch V2</td><td>DINOv2-S</td><td>79.0</td><td>85.5</td><td>85.9</td></tr>
+          <tr><td>PrevMatch / BeyondPixels</td><td>ResNet-101</td><td>77.3</td><td>78.6</td><td>79.8</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">1/8 three-seed mean <b>86.19 ± 1.82</b> (per-seed 87.40 / 84.09 / 87.08); 1/16 &amp; 1/4 single seed. Released weights: EMA teacher of seed 0.</p>
+    </div>
+
+    <div class="board" id="board-cs">
+      <div class="tblwrap"><table>
+        <thead><tr><th>Method</th><th>Backbone</th><th>1/16</th><th>1/8</th><th>1/4</th></tr></thead>
+        <tbody>
+          <tr><td>UniMatch V2</td><td>DINOv2-B</td><td class="best">83.6</td><td class="best">84.3</td><td class="best">84.5</td></tr>
+          <tr class="ours"><td>CW-BASS v2 (gate → strict)</td><td>DINOv2-B</td><td>83.16</td><td>83.96</td><td>83.99</td></tr>
+          <tr><td>SemiVL</td><td>CLIP ViT-B</td><td>77.9</td><td>79.4</td><td>80.3</td></tr>
+          <tr><td>BeyondPixels</td><td>ResNet-101</td><td>78.5</td><td>79.2</td><td>80.9</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">Near-saturated teacher: the adaptive rules tie strict (spread ≈ 0.5 mIoU), so the gate's strict choice is a no-regret default. Single seed, best EMA.</p>
+    </div>
+
+    <div class="board" id="board-ade">
+      <div class="tblwrap"><table>
+        <thead><tr><th>Method</th><th>Backbone</th><th>1/8 (2,526)</th></tr></thead>
+        <tbody>
+          <tr class="ours"><td>CW-BASS v2 (gate → floor)</td><td>DINOv2-B</td><td class="best">50.58</td></tr>
+          <tr><td>UniMatch V2 (reported)</td><td>DINOv2-B</td><td>49.8</td></tr>
+          <tr><td>Strict τ=0.95 (our repro)</td><td>DINOv2-B</td><td>49.10</td></tr>
+          <tr><td>SemiVL</td><td>CLIP ViT-B</td><td>39.4</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">The one dataset here where selection changes the answer: the floor beats the strict baseline by <b>+1.5</b> and edges above UniMatch V2-B's reported 49.8. Single seed.</p>
+    </div>
+
+    <div class="callout" style="border-left-color:var(--accent)">
+      <b style="color:var(--accent)">Where it stands, honestly.</b> The jump over the ResNet-era field is almost entirely
+      the DINOv2 backbone, not selection cleverness. On saturated teachers CW-BASS v2 trails only UniMatch V2's reported
+      numbers (&lt; 0.5 mIoU at Pascal 1/8), because there the right move <em>is</em> strict. CW-BASS v2's contribution is
+      the gate that <em>knows</em> that — and flips to the floor exactly when the teacher's confident set is unreliable.
+    </div>
+    <figure>
+      <img src="multiseed.png" alt="EMA-teacher mIoU over training at matched batch: strict stays above the CW-BASS v1 dynamic rule across all three seeds; strict's best seeds reach the UniMatch V2 operating point.">
+      <figcaption><b>The decisive control.</b> EMA-teacher mIoU over training at matched batch (Pascal VOC 1/8, DINOv2-Base):
+      strict &tau;=0.95 (blue) vs. the CW-BASS v1 dynamic rule (orange), three-seed means (bold) with per-seed lines. Strict
+      stays clearly above adaptive throughout, and its best seeds reach the UniMatch V2 operating point (~87.4) — which is
+      why the gate selects strict on this saturated teacher.</figcaption>
+    </figure>
+  </section>
+
+  <section id="gate">
+    <h2>The gate, measured blind</h2>
+    <p>On a held-out slice we measure, per teacher, saturation <b>S = Pr[c ≥ 0.95]</b> and reliability
+    <b>π<sub>kept</sub> = Pr[correct | c ≥ 0.95]</b> — a forward-only diagnostic that touches no mIoU. All six DINOv2
+    teachers are saturated, but they differ in reliability: on Pascal the confident set is trustworthy
+    (π<sub>kept</sub> ≈ 98%), so strict filtering is right; on ADE20K it is <b>confidently unreliable</b>
+    (π<sub>kept</sub> ≈ 89%, well below the 95% strict assumes), so the floor recovers accuracy a strict cutoff throws
+    away. The gate reads this single statistic and selects the accuracy-optimal rule on all six teachers — with no access
+    to validation mIoU.</p>
+    <div class="grid3">
+      <div class="card"><div class="k">≈98%</div><div class="s">π<sub>kept</sub> on Pascal — reliable confident set → gate picks strict</div></div>
+      <div class="card"><div class="k">≈89%</div><div class="s">π<sub>kept</sub> on ADE20K — unreliable confident set → gate picks floor</div></div>
+      <div class="card"><div class="k">0</div><div class="s">mIoU values the gate looks at — the boundary is τ itself</div></div>
+    </div>
+  </section>
+
+  <section id="gallery">
+    <h2>Qualitative results</h2>
+    <p>Left: input. Right: CW-BASS v2 prediction overlay (DINOv2-Base, 1/8 split). Validation images,
+    the rule the gate selects on each dataset.</p>
+    <figure><img src="qual_pascal.png" alt="CW-BASS v2 on Pascal VOC — cyclists: person and bicycle segmented.">
+      <figcaption>Pascal VOC (21 classes) — gate → strict.</figcaption></figure>
+    <figure><img src="qual_cityscapes.png" alt="CW-BASS v2 on Cityscapes — street scene: road, cars, vegetation, sidewalk.">
+      <figcaption>Cityscapes (19 classes) — gate → strict.</figcaption></figure>
+    <figure><img src="qual_ade20k.png" alt="CW-BASS v2 on ADE20K — walk-in closet: wardrobe, apparel, lamp, floor, rug.">
+      <figcaption>ADE20K (150 classes) — gate → floor.</figcaption></figure>
+  </section>
+
+  <section id="models">
+    <h2>Pretrained models &amp; demo</h2>
+    <p>Each released checkpoint is the EMA teacher of the rule the gate <b>selects</b> on that dataset. The
+    <a href="https://huggingface.co/spaces/psychofict/cwbass-v2-segmentation">live demo</a> runs them on your own images — pick a label set, upload, get an overlay — and the
+    same app is in <code>demo/</code> if you would rather run it yourself:</p>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Dataset</th><th>Rule selected</th><th>mIoU (1/8)</th><th>Weights</th></tr></thead>
+      <tbody>
+        <tr><td>Pascal VOC (21)</td><td>strict</td><td>87.40</td><td><a href="https://huggingface.co/psychofict/cwbass-v2-pascal">cwbass-v2-pascal</a></td></tr>
+        <tr><td>Cityscapes (19)</td><td>strict</td><td>83.96</td><td><a href="https://huggingface.co/psychofict/cwbass-v2-cityscapes">cwbass-v2-cityscapes</a></td></tr>
+        <tr><td>ADE20K (150)</td><td>floor</td><td>50.58</td><td><a href="https://huggingface.co/psychofict/cwbass-v2-ade20k">cwbass-v2-ade20k</a></td></tr>
+      </tbody>
+    </table></div>
+    <div class="btns" style="justify-content:flex-start">
+      <a class="btn primary" href="https://huggingface.co/spaces/psychofict/cwbass-v2-segmentation">▶ Try the demo on Hugging Face</a>
+      <a class="btn" href="https://github.com/psychofict/CW-BASS-v2/tree/main/demo">💾 Run it locally</a>
+      <a class="btn" href="https://github.com/psychofict/CW-BASS-v2">💻 Code &amp; training</a>
+    </div>
+  </section>
+
+  <section id="bibtex">
+    <h2>BibTeX</h2>
+    <pre class="bib" id="bib"><button class="copy" id="copyBtn">Copy</button>@article{tarubinga2026cwbassv2,
+  title   = {CW-BASS v2: Saturation-Aware Pseudo-Label Selection for
+             Semi-Supervised Segmentation under Foundation-Model Teachers},
+  author  = {Tarubinga, Ebenezer},
+  year    = {2026},
+  journal = {arXiv preprint arXiv:2608.12773},
+  eprint  = {2608.12773},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV}
+}</pre>
+    <p class="note">v1: CW-BASS, <em>Confidence-Weighted Boundary-Aware Learning for Semi-Supervised Semantic
+    Segmentation</em>, IJCNN 2025 (<a href="https://arxiv.org/abs/2502.15152">arXiv:2502.15152</a>).</p>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    CW-BASS v2 · single DINOv2-Base backbone · reliability-gated pseudo-label selection · no inference-time parameters<br>
+    Built on <a href="https://github.com/LiheYoung/UniMatch-V2">UniMatch V2</a> and
+    <a href="https://github.com/facebookresearch/dinov2">DINOv2</a>. Apache-2.0.
+  </div>
+</footer>
+
+<script>
+  var root=document.documentElement;
+  function setTheme(t){ root.setAttribute('data-theme',t); localStorage.setItem('theme',t); }
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    setTheme(root.getAttribute('data-theme')==='dark'?'light':'dark');
+  });
+  // leaderboard tabs
+  document.querySelectorAll('.tab').forEach(function(tab){
+    tab.addEventListener('click',function(){
+      document.querySelectorAll('.tab').forEach(function(t){t.setAttribute('aria-selected','false')});
+      tab.setAttribute('aria-selected','true');
+      document.querySelectorAll('.board').forEach(function(b){b.classList.remove('on')});
+      document.getElementById('board-'+tab.dataset.board).classList.add('on');
+    });
+  });
+  // copy bibtex
+  document.getElementById('copyBtn').addEventListener('click',function(){
+    var txt=document.getElementById('bib').innerText.replace(/^Copy\s*/,'');
+    navigator.clipboard.writeText(txt).then(function(){
+      var b=document.getElementById('copyBtn'); b.innerText='Copied ✓'; setTimeout(function(){b.innerText='Copy'},1500);
+    });
+  });
+</script>
+</body>
+</html>

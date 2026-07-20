@@ -1,0 +1,49 @@
+CW-BASS v2
+Copyright 2026 Ebenezer Tarubinga
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes software developed by third parties, redistributed here
+under their original terms. Those terms govern the files listed against them.
+
+-------------------------------------------------------------------------------
+UniMatch / UniMatch V2 and ST++ (MIT License)
+https://github.com/LiheYoung/UniMatch-V2
+https://github.com/LiheYoung/ST-PlusPlus
+
+The data pipeline and the ResNet-era backbones and segmentation heads derive
+from this work:
+  dataset/semi.py
+  dataset/transform.py
+  model/backbone/resnet.py
+  model/semseg/{base,deeplabv2,deeplabv3plus,pspnet}.py
+
+    MIT License
+
+    Copyright (c) 2021 Lihe Yang
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+-------------------------------------------------------------------------------
+DINOv2 (Apache License 2.0)
+https://github.com/facebookresearch/dinov2
+Copyright (c) Meta Platforms, Inc. and affiliates.
+
+Pretrained DINOv2 weights are loaded at runtime via torch.hub; no DINOv2 source
+is vendored here. The weights carry Meta's Apache-2.0 terms.

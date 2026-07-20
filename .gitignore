@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Training outputs / checkpoints (large; hosted on Hugging Face)
+exp/
+experiments/
+exp_local/
+pretrained/
+*.pth
+*.pt
+
+# Data (downloaded separately)
+data/
+data_cache/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local agent/session config
+.claude/
